@@ -1,0 +1,121 @@
+---
+title: Rest API implementation
+order: 3
+---
+
+# API Implementation
+Rest authentication with express and Auth0 
+
+Learn how to create an API rest and protect endpoints, this an TODO List app, you will learn how to configure your API with Auth0 in 10mins.
+
+### Download the project
+```
+  git clone https://github.com/TheEnmanuel23/authApp.git
+```
+
+Go to the folder **rest-app**
+```
+cd apps/rest-app
+```
+
+Install dependencies
+```
+npm install
+```
+
+Run the development server
+```
+npm run start
+```
+
+### Auth0 initial configuration
+The first step to start configuring our server is to get the follow values:
+```
+ISSUER_BASE_URL=https://YOUR_DOMAIN
+CLIENT_ID=YOUR_CLIENT_ID
+BASE_URL=https://YOUR_APPLICATION_ROOT_URL
+SECRET=LONG_RANDOM_VALUE
+```
+
+### Getting authentication tokens
+1. [Sign-up](https://auth0.com/signup?promo=sup&place=in-blog-banner&type=link&text=get-started&origin=blog)
+2. Create a `Regular Web Application` and select NodeJs
+3. Go the the configuration page
+4. Allow Callback URLs `http://localhost:3000`
+5. Allow Logout URLs `http://localhost:3000`
+5. Get the values `domain` and `clientId`, they correspond to the "Domain" and "Client ID""
+
+After configuring the app we need to create a new file `.env` and put those values there.
+```
+// .env 
+ISSUER_BASE_URL=https://dev-d141581g.us.auth0.com
+CLIENT_ID=nxCNBXMc1PyzY6yRxYjoo8MHdsEZHu
+BASE_URL=http://localhost:3000
+SECRET=lkjaljlk23424242ljslkfj#$123
+```
+*Note: Don't use those values, they are only examples.*
+
+### Configure server
+We are using [express-openid-connect  ](https://github.com/auth0/express-openid-connect) to connect to the Auth0 Application. 
+We will set the connection by express middlewares
+```js
+const { auth, requiresAuth } = require('express-openid-connect');
+
+const app = express()
+
+app.use(
+  auth({
+    authRequired: false,
+    auth0Logout: true,
+    issuerBaseURL: process.env.ISSUER_BASE_URL,
+    baseURL: process.env.BASE_URL,
+    clientID: process.env.CLIENT_ID,
+    secret: process.env.SECRET,
+  })
+);
+```
+
+### Protected Endpoints
+The library `express-openid-connect` provide us with a function that validates the session state, we simple use it as middleware in the routes we want to protect.
+
+```js
+const { auth, requiresAuth } = require('express-openid-connect');
+cont app = express()
+
+const router = express.Router()
+router.get('/', (req, res) => {
+  res.json({ privateDate: {} })
+})
+
+app.use('/private', requiresAuth(), router)
+```
+
+If we try to hit `http://localhost:3000/private` the app will redirect us to the login form provided by Auth0.
+
+To reach that endpoint we need to log in:
+`http://localhost:3000/login`
+
+End to logout is as simple as:
+`http://localhost:3000/logout`
+
+
+### Get user info
+To get the user data we simple call the `oidc.user` property from the request:
+```js
+router.get('/', (req, res) => {
+  res.send(JSON.stringify(req.oidc.user))
+})
+```
+
+End obviously we must protect that endoint:
+```js
+const { auth, requiresAuth } = require('express-openid-connect');
+cont app = express()
+
+const profileRouter = express.Router()
+router.get('/', (req, res) => {
+  res.send(JSON.stringify(req.oidc.user))
+})
+
+app.use('/profile', requiresAuth(), profileRouter)
+```

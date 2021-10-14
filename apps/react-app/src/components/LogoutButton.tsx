@@ -1,12 +1,17 @@
-
 import { useAuth0 } from '@auth0/auth0-react'
+import Button from 'react-bootstrap/Button';
 
 export default () => {
-  const { logout, isAuthenticated } = useAuth0()
+  const { logout } = useAuth0()
 
-  if (!isAuthenticated) return null
 
-  return <button onClick={() => logout()}>
-    Log out
-  </button>
+  return (
+    <Button
+      onClick={() => logout()}
+      variant="danger"
+      className="btn-margin"
+    >
+      Log out
+    </Button>
+  )
 }

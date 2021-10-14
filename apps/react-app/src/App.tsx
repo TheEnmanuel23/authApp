@@ -1,23 +1,49 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
-import LoginButton from './components/LoginButton';
-import LogoutButton from './components/LogoutButton';
-import Profile from './components/Profile';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth0 } from "@auth0/auth0-react";
+import { Spinner } from "react-bootstrap";
+import {
+  Switch,
+  Route,
+} from "react-router-dom";
+import styled from 'styled-components'
+import Navbar from "./components/Navbar";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Home from "./views/Home";
+import Login from "./views/Login";
 
-function App() {
+const Wrapper = styled.div`
+  margin: 0 auto;
+  margin-top: 50px;
+  width: 60%;
+`
+
+function Content() {
   const { isLoading } = useAuth0()
 
   if (isLoading) {
-    return <p>loading...</p>
+    return (
+      <Wrapper>
+        <Spinner animation="border" />
+      </Wrapper>
+    )
   }
 
   return (
-    <div className="App">
-      <LoginButton />
-      <LogoutButton />
-      <Profile />
+    <Wrapper>
+      <Switch>
+        <Route path='/login' component={Login} />
+        <ProtectedRoute path='/' component={Home} />
+      </Switch>
+    </Wrapper>
+  )
+}
+
+
+function App() {
+
+  return (
+    <div>
+      <Navbar />
+      <Content />
     </div>
   );
 }

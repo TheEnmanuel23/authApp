@@ -1,0 +1,140 @@
+---
+title: ReactJs implementation
+---
+
+# ReactJs implementation
+User authentication with React and Auth0 
+
+This is an example app to show the basics of auth0, there are many things you can do. In this app we build a TODO App, the user can see his todo list or create new todos after logging in. 
+
+### Download the project
+```
+  git clone https://github.com/TheEnmanuel23/authApp.git
+```
+
+Go to the folder **react-app**
+```
+cd apps/react-app
+```
+
+Install dependencies
+```
+yarn install
+```
+
+Run the development server
+```
+yarn start
+```
+
+### Auth0 initial configuration
+
+If we take a quick look at the folder, so you will see that we are using Typescript with jsx, to achieve this we have used the Typescript template of [create-react-app](https://reactjs.org/docs/create-a-new-react-app.html).
+
+Now, when opening the file `src/index.tsx`  we find the Auth0 configuration, we are using the library `@auth0/auth0-react`.
+
+
+```jsx
+const domain = process.env.REACT_APP_AUTH0_DOMAIN as string;
+const clientId = process.env.REACT_APP_AUTH0_CLIENT_ID as string;
+
+<Auth0Provider
+  domain={domain}
+  clientId={clientId}
+  redirectUri={window.location.origin}
+>
+  <App />
+</Auth0Provider>
+```
+
+As you can see, we set the domain and clientId props but to get those values we need:
+1. [Sign-up](https://auth0.com/signup?promo=sup&place=in-blog-banner&type=link&text=get-started&origin=blog)
+2. Create an app
+3. Go the the configuration page
+4. Allow Callback URLs `http://localhost:3000`
+5. Allow Logout URLs `http://localhost:3000`
+5. Get the values `domain` and `clientId`, they correspond to the "Domain" and "Client ID""
+
+
+### Login and Logout
+#### Login
+```jsx
+import { useAuth0 } from '@auth0/auth0-react'
+
+...
+ const { loginWithRedirect } = useAuth0()
+ <button onClick={() => loginWithRedirect()}>Log in</button>
+...
+```
+Pretty straightforward, we render a component, use the useAuth0 hook and finally call the `loginWithRedirect` function.
+
+#### Logout
+```jsx
+import { useAuth0 } from '@auth0/auth0-react'
+
+...
+ const { logout } = useAuth0()
+ <button onClick={() => logout()}>Log out</button>
+...
+```
+
+### Protected routes
+The hook `useAuth0` provide us with a value that indicates the session state, that value is `isAuthenticated`, by this variable we perfectly use conditional rendering to show or hide links, routes, etc.
+
+```jsx
+// conditional rendering
+import { useAuth0 } from '@auth0/auth0-react'
+
+...
+  const { isAuthenticated } = useAuth0()
+  <div>
+   {isAuthenticated ? <LogoutButton /> : <LoginButton />}
+  </div>
+...
+```
+
+```jsx
+// protected routes
+import { useAuth0 } from "@auth0/auth0-react"
+import { Redirect, Route } from "react-router-dom"
+
+type Props = {
+  path: string,
+  component: React.FunctionComponent<any>
+}
+
+const ProtectedRoute = ({ path, component: Component, ...restProps }: Props) => {
+  const { isAuthenticated } = useAuth0()
+
+  return <Route
+    path={path}
+    component={(props: { [x: string]: any }) => {
+      if (!isAuthenticated) {
+        return <Redirect to="/login" />
+      }
+
+      return <Component {...props} />
+    }}
+    {...restProps}
+  >
+  </Route >
+}
+
+export default ProtectedRoute
+```
+```
+<ProtectedRoute path='/profile' component={Profile} />
+```
+
+### Get user info
+As we have seen previously we are going to use the hook `useAuth0`, but this time we will use the variable `user`
+```jsx
+const { user } = useAuth0()
+
+<div>
+  <img src={user.picture} alt={user.name} />
+  <h2>{user.name}</h2>
+  <p>{user.email}</p>
+</div>
+```
+

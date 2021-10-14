@@ -1,11 +1,8 @@
-# smooth-doc-starter
+# Auth0 API Implementation
 
-## [Docs](https://smooth-doc.com)
 
-**See the documentation at [smooth-doc.com](https://smooth-doc.com)** for more information about using Smooth DOC!
+**See the documentation at [local server](http://localhost:8000)** for more information about this project.
 
-## License
-
-Licensed under the MIT License, Copyright © 2020-present Greg Bergé.
-
-See [LICENSE](./LICENSE) for more information.
+1. cd docs/
+2. npm install
+3. npm run serve 

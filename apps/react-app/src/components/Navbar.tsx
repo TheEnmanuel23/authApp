@@ -32,22 +32,6 @@ const AuthNav = () => {
       >
         Profile
       </Nav.Link>
-      <Nav.Link
-        as={RouterNavLink}
-        to="/completed"
-        exact
-        activeClassName="router-link-exact-active"
-      >
-        Completed
-      </Nav.Link>
-      <Nav.Link
-        as={RouterNavLink}
-        to="/trash"
-        exact
-        activeClassName="router-link-exact-active"
-      >
-        Trash
-      </Nav.Link>
     </Nav>
   )
 }

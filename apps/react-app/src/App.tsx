@@ -28,18 +28,17 @@ function Content() {
   }
 
   return (
-    <Wrapper>
-      <Switch>
-        <Route path='/login' component={Login} />
-        <ProtectedRoute path='/' component={Home} />
-      </Switch>
-    </Wrapper>
+      <Wrapper>
+        <Switch>
+          <Route path='/login' component={Login} />
+          <ProtectedRoute path='/' component={Home} />
+        </Switch>
+      </Wrapper>
   )
 }
 
 
 function App() {
-
   return (
     <div>
       <Navbar />

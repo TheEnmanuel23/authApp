@@ -1,0 +1,172 @@
+---
+title: Rest and GraphQL Implementation
+order: 4
+---
+
+# Server Implementation
+Rest and GraphQL authentication with express and Auth0 
+
+Learn how to create an API rest and protect endpoints, this an TODO List app, you will learn how to configure your API with Auth0 in 10mins.
+
+### Download the project
+```
+  git clone https://github.com/TheEnmanuel23/authApp.git
+```
+
+Go to the folder **rest-api**
+```
+cd apps/rest-api
+```
+
+Install dependencies
+```
+npm install
+```
+
+Run the development server
+```
+npm start
+```
+
+### Auth0 initial configuration
+The first step to start configuring our server is to get the follow values:
+```
+AUTH0_AUDIENCE=https://www.example-api.com
+AUTH0_DOMAIN=https://YOUR_DOMAIN
+```
+
+### Getting authentication tokens
+1. [Sign-up](https://auth0.com/signup?promo=sup&place=in-blog-banner&type=link&text=get-started&origin=blog)
+2. Create a new `Api project`
+3. Enter your app name and your domain URL: `https://blog-api`
+
+I created the file `check-auth.js` to put my auth0 configuration.
+Go to the **Quick Start** page, then select NodeJs and copy and paste the code in the file `check-outh.js`
+```js
+const jwt = require("express-jwt");
+const jwksRsa = require("jwks-rsa");
+const { domain, audience } = require("../config/env.dev");
+
+const jwtCheck = jwt({
+  secret: jwksRsa.expressJwtSecret({
+    cache: true,
+    rateLimit: true,
+    jwksRequestsPerMinute: 5,
+    jwksUri: `https://${domain}/.well-known/jwks.json`
+  }),
+  audience,
+  issuer: `https://${domain}/`,
+  algorithms: ['RS256']
+});
+
+module.exports = jwtCheck
+```
+
+After configuring the app we need to create a new file `.env` and put those values there.
+```
+// .env 
+AUTH0_AUDIENCE=https://www.blog-api.com
+AUTH0_DOMAIN=dev-89o7t11g.us.auth0.com
+```
+*Note: Don't use those values, they are only examples.*
+
+### Configure Rest Server
+All we need to do is call our jwtCheck function and pass it as a middleware. For this example I have created two directories called: **public** and **private**.
+```js
+const http = require('http');
+const express = require('express')
+const jwtCheck = require("./utils/check-auth");
+const publicRoutes = require('./src/public/router')
+const privateRoutes = require('./src/private/router')
+
+const app = express()
+const httpServer = http.createServer(app);
+
+app.use('/public', publicRoutes)
+app.use('/private', jwtCheck, privateRoutes)
+
+httpServer.listen({ port }, () => {
+  console.log(`🚀 Rest Server ready at http://localhost:${port}`);
+})
+```
+
+With that in place, we are ready to hit our api.
+Nevertheless, to see the whole thing in action, you can head back to your Auth0 Dashboard, open the API you created before, and move to the Test section. On this section, you will see a button called Copy Token that will provide you a temporary token that you can use to test your API.
+```json
+{
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InUyV1JxTUowS3JsUTYxaVZJSGRqYSJ9.eyJpc3MiOiJodHRwczovL2Rldi04OW83dDEzZy51cy5hdXRoMC5jb20vIiwic3ViIjoiMWNGcU1ORWdZWVRPSDJ6TGtQQkFHZjlCcWdYWnRSRnhAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vd3d3LmJsb2ctYXBpcy5jb20iLCJpYXQiOjE2MzQyNDc4NTcsImV4cCI6MTYzNDMzNDI1NywiYXpwIjoiMWNGcU1ORWdZWVRPSDJ6TGtQQkFHZjlCcWdYWnRSRngiLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMifQ.Tw3gNj42HnvWXBkVuWY-xPknVcjhuskkRQki2EVDuMR2JWtGP76eXabj2O4jSOY-aDHRMl7lSyH4TK1pk-ZNn4yQ7PZMU6IjsekyjKkgQnLUhEZ8lq0l1C8-fKK_4o7Pg5UjF5PBM035MuWy3zlBCfMam6Nu2okbfsYjCrFuFgUsnfFqa_QOMj0r8Ty2UX4i-uLdLfMkmn_nc-khSDPqXyhC5kYubNGPvpaIJpxhko0LKKiVvvsUlcxd2VbTwm6DbOWpWGN30On-CTSGRLRbSxMPt5e6x1Uf2YtUMAXC6VEdC65ktAuQMlJLSoG8KmdT7kH-TrD8l-NO1hPTyNY59Q",
+  "token_type": "Bearer"
+}
+```
+### Add GraphQL security
+
+To add graphql into our rest project we could use the package `apollo-server-express`, read more [here](https://www.apollographql.com/docs/apollo-server/integrations/middleware/#apollo-server-express)
+
+I have configured my graphql server in the file: `src/graphql/router`:
+```js
+const { ApolloServer, gql } = require('apollo-server-express');
+const { ApolloServerPluginDrainHttpServer } = require('apollo-server-core');
+const { port } = require('../../config/env.dev')
+const jwtCheck = require("../../utils/check-auth");
+
+const typeDefs = gql`
+  type Query {
+    hello: String
+  }
+`
+
+const resolvers = {
+  Query: {
+    hello: (info, args, context) => 'Hello protected world!'
+  }
+}
+
+const setupGraphqlServer = async (httpServer, app) => {
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+    context: ({ req }) => {
+      const user = req.user;
+      return { user };
+    }
+  });
+
+  await server.start();
+
+  app.use(jwtCheck)
+  server.applyMiddleware({ app });
+
+  console.log(`🚀 Graphql Server ready at http://localhost:${port}${server.graphqlPath}`)
+}
+
+module.exports = setupGraphqlServer
+```
+
+Pay special attention to the line `app.use(jwtCheck)`, with that line we protect our graphql server, even we can get the user by context property tht apollo server provide us.
+```js
+{
+ ...
+  context: ({ req }) => {
+    const user = req.user;
+    return { user };
+  }
+  ...
+}
+```
+
+And get it in our resolvers:
+```js
+const resolvers = {
+  Query: {
+    hello: (info, args, context) => {
+      console.log(context.user)
+      return 'Hello protected world!'
+    } 
+  }
+}
+```
+
+### Conclusion
+In this article we learned about how easy it is to develop RESTful APIs with Express, Node.js and GraphQL. More specifically, you used Express to expose API endpoints to manipulate public and private data.
+
